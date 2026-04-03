@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.route.js';
 import recordRoutes from './routes/record.route.js';
+import userRoutes from './routes/user.route.js';
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/records', recordRoutes);
+app.use('/api/users', userRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
