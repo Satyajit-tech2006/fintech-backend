@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import authRoutes from './routes/auth.routes.js';
-import recordRoutes from './routes/record.routes.js';
+import authRoutes from './routes/auth.route.js';
+import recordRoutes from './routes/record.route.js';
 
 const app = express();
 
@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(cors());
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Zorvyn FinTech API is running securely.' });
+  res.status(200).json({ status: 'OK', message: 'API is running securely.' });
 });
 
 app.use('/api/auth', authRoutes);
