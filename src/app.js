@@ -5,6 +5,7 @@ import {
   parameterPollution, 
   globalLimiter 
 } from './middlewares/security.middleware.js';
+import { requestLogger } from './middlewares/logger.middleware.js';
 
 import authRoutes from './routes/auth.route.js';
 import recordRoutes from './routes/record.route.js';
@@ -19,6 +20,8 @@ const app = express();
 
 const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.use(requestLogger);
 
 app.use(securityHeaders);
 app.use(corsConfig);
