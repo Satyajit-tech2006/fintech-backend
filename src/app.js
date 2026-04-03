@@ -10,7 +10,15 @@ import authRoutes from './routes/auth.route.js';
 import recordRoutes from './routes/record.route.js';
 import userRoutes from './routes/user.route.js';
 
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+
+
 const app = express();
+
+const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(securityHeaders);
 app.use(corsConfig);

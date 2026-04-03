@@ -24,27 +24,41 @@ export const createRecord = async (userId, data) => {
 };
 
 export const getDashboardSummary = async () => {
-  const records = await prisma.financialRecord.findMany({
-    where: {
-      deletedAt: null
-    }
+  const aggregations = await prisma.financialRecord.aggregate({
+    where: { deletedAt: null },
+    _sum: { amount: true },
+    _avg: { amount: true },
+    _count: { id: true }
   });
 
-  const summary = records.reduce((acc, record) => {
-    const amount = parseFloat(record.amount);
+  const categoryTotals = await prisma.financialRecord.groupBy({
+    by: ['category'],
+    where: { deletedAt: null },
+    _sum: { amount: true },
+    orderBy: { _sum: { amount: 'desc' } }
+  });
+
+  const records = await prisma.financialRecord.findMany({
+    where: { deletedAt: null },
+    select: { amount: true, date: true, type: true },
+    orderBy: { date: 'asc' }
+  });
+
+  const trends = records.reduce((acc, curr) => {
+    const month = curr.date.toLocaleString('default', { month: 'short' });
+    if (!acc[month]) acc[month] = { income: 0, expense: 0 };
     
-    if (record.type === 'INCOME') {
-      acc.totalIncome += amount;
-      acc.netBalance += amount;
-    } else {
-      acc.totalExpenses += amount;
-      acc.netBalance -= amount;
-    }
+    if (curr.type === 'INCOME') acc[month].income += parseFloat(curr.amount);
+    else acc[month].expense += parseFloat(curr.amount);
     
     return acc;
-  }, { totalIncome: 0, totalExpenses: 0, netBalance: 0 });
+  }, {});
 
-  return summary;
+  return {
+    stats: aggregations,
+    categories: categoryTotals,
+    trends
+  };
 };
 
 export const getRecords = async (filters, page = 1, limit = 10) => {
@@ -53,6 +67,17 @@ export const getRecords = async (filters, page = 1, limit = 10) => {
   
   if (filters.type) whereClause.type = filters.type;
   if (filters.category) whereClause.category = filters.category;
+  
+  if (filters.search && filters.search.trim()) {
+    const searchTerm = filters.search.trim();
+    if (searchTerm.length > 100) {
+      throw new Error('Search term is too long.');
+    }
+    whereClause.OR = [
+      { notes: { contains: searchTerm, mode: 'insensitive' } },
+      { category: { contains: searchTerm, mode: 'insensitive' } }
+    ];
+  }
   
   if (filters.startDate || filters.endDate) {
     whereClause.date = {};

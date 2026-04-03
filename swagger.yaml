@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  title: Zorvyn FinTech API
+  description: Core financial data processing, RBAC, and audit-logging service.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate a user
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: admin@zorvyn.com
+                password:
+                  type: string
+                  example: supersecretpassword
+      responses:
+        '200':
+          description: Successful authentication
+  
+  /records:
+    post:
+      summary: Create a financial record (Admin only)
+      tags: [Financial Records]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  example: 5000
+                type:
+                  type: string
+                  enum: [INCOME, EXPENSE]
+                  example: INCOME
+                category:
+                  type: string
+                  example: Initial Funding
+                notes:
+                  type: string
+                  example: Seed capital
+      responses:
+        '201':
+          description: Record created successfully and audit logged.
+          
+  /records/summary:
+    get:
+      summary: Get advanced dashboard aggregations
+      tags: [Dashboard]
+      responses:
+        '200':
+          description: Returns stats, category totals, and monthly trends.
+
+  /records/export:
+    get:
+      summary: Export financial data to CSV
+      tags: [Dashboard]
+      responses:
+        '200':
+          description: Returns a downloadable CSV file.
+          content:
+            text/csv:
+              schema:
+                type: string
