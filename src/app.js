@@ -1,17 +1,24 @@
 import express from 'express';
-import cors from 'cors';
+import { 
+  securityHeaders, 
+  corsConfig, 
+  parameterPollution, 
+  globalLimiter 
+} from './middlewares/security.middleware.js';
+
 import authRoutes from './routes/auth.route.js';
 import recordRoutes from './routes/record.route.js';
 import userRoutes from './routes/user.route.js';
 
 const app = express();
 
-app.use(express.json());
-app.use(cors());
+app.use(securityHeaders);
+app.use(corsConfig);
+app.use(globalLimiter);
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'API is running securely.' });
-});
+app.use(express.json({ limit: '10kb' })); 
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(parameterPollution);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/records', recordRoutes);
