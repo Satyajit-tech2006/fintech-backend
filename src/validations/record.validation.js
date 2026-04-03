@@ -6,3 +6,10 @@ export const createRecordSchema = z.object({
   category: z.string().min(2),
   notes: z.string().optional()
 });
+
+export const updateRecordSchema = z.object({
+  amount: z.number().positive().optional(),
+  type: z.enum(['INCOME', 'EXPENSE']).optional(),
+  category: z.string().min(2).optional(),
+  notes: z.string().optional()
+});
