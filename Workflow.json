@@ -1,8 +1,8 @@
 {
     "info": {
-        "name": "Zorvyn FinTech API - Complete",
+        "name": "Zorvyn FinTech API - Enterprise Final",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "description": "Complete workflow including Auth, Records CRUD, Analytics, CSV Export, and User Management."
+        "description": "Complete production-grade workflow including OAuth2-style Auth, Records CRUD, Advanced Analytics, CSV Export, User Management, and Trace ID Observability."
     },
     "item": [
         {
@@ -44,9 +44,9 @@
                                 "exec": [
                                     "const response = pm.response.json();",
                                     "",
-                                    "if (response.token) {",
-                                    "    pm.collectionVariables.set(\"auth_token\", response.token);",
-                                    "    console.log(\"✅ Token Auto-filled: \" + response.token);",
+                                    "if (response.accessToken) {",
+                                    "    pm.collectionVariables.set(\"auth_token\", response.accessToken);",
+                                    "    console.log(\"✅ Access Token Auto-filled\");",
                                     "} else {",
                                     "    console.error(\"❌ Login Failed - No Token Found\");",
                                     "}"
@@ -76,6 +76,63 @@
                                 "api",
                                 "auth",
                                 "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const response = pm.response.json();",
+                                    "if (response.accessToken) {",
+                                    "    pm.collectionVariables.set(\"auth_token\", response.accessToken);",
+                                    "    console.log(\"✅ Token Refreshed Successfully\");",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "refresh"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout"
                             ]
                         }
                     }
@@ -119,6 +176,19 @@
                 },
                 {
                     "name": "Get Dashboard Summary",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Trace ID Header is present\", function () {",
+                                    "    pm.response.to.have.header(\"X-Trace-Id\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "GET",
                         "header": [

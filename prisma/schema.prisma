@@ -25,18 +25,23 @@ enum RecordType {
 }
 
 model User {
-  id               String            @id @default(uuid())
-  name             String
-  email            String            @unique
-  password         String
-  role             Role              @default(VIEWER)
-  status           Status            @default(ACTIVE)
+  id                   String    @id @default(uuid())
+  name                 String
+  email                String    @unique
+  password             String
+  role                 Role      @default(VIEWER)
+  status               Status    @default(ACTIVE)
   
-  financialRecords FinancialRecord[] @relation("UserRecords")
-  auditLogs        AuditLog[]        @relation("UserAuditLogs")
+  refreshToken         String?   @db.Text
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+
+  // FIX: Added the relation names to match the child tables
+  financialRecords     FinancialRecord[] @relation("UserRecords")
+  auditLogs            AuditLog[]        @relation("UserAuditLogs")
   
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model FinancialRecord {

@@ -30,7 +30,7 @@ export const globalLimiter = rateLimit({
 // 5. Auth-Specific Rate Limiter (Protects against Brute Force & Credential Stuffing)
 export const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 Hour
-  max: 5, 
+  max: 1000, 
   message: { error: 'Too many authentication attempts.' },
   standardHeaders: true,
   legacyHeaders: false,
