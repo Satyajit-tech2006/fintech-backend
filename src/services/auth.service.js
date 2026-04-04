@@ -7,8 +7,17 @@ export const generateAccessAndRefreshTokens = async (userId) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User not found");
 
-  const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '15m' });
-  const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+  const accessToken = jwt.sign(
+    { id: user.id, role: user.role }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+  );
+  
+  const refreshToken = jwt.sign(
+    { id: user.id }, 
+    process.env.JWT_REFRESH_SECRET, 
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+  );
 
   await prisma.user.update({
     where: { id: userId },
