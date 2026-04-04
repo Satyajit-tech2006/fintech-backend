@@ -4,6 +4,11 @@
 
 **Base URL:** `http://localhost:5000/api`
 
+## 📌 Assumptions
+
+- The system is designed as a single-tenant corporate financial ledger where multiple roles interact with shared financial data.
+
+
 ## 🚀 Key Features
 
 * **Role-Based Access Control (RBAC):** Viewer, Analyst, and Admin roles. Authorization is enforced at the route level using middleware to ensure strict role-based behavior.
