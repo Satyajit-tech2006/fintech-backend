@@ -6,8 +6,8 @@ const router = Router();
 
 router.use(verifyToken);
 
-router.get('/summary', requireRole(['ANALYST', 'ADMIN']), getSummary);
-router.get('/', requireRole(['ANALYST', 'ADMIN']), getAll);
+router.get('/summary', requireRole(['VIEWER', 'ANALYST', 'ADMIN']), getSummary);
+router.get('/', requireRole(['VIEWER', 'ANALYST', 'ADMIN']), getAll);
 router.get('/export', requireRole(['ANALYST', 'ADMIN']), exportCsv);
 router.post('/', requireRole(['ADMIN']), create);
 router.put('/:id', requireRole(['ADMIN']), update);
