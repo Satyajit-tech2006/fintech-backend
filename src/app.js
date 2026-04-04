@@ -19,8 +19,16 @@ import path from 'path';
 
 const app = express();
 
-const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+let swaggerDocument;
+try {
+  swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
+} catch (e) {
+  console.error("Swagger file not found, docs will be disabled.");
+}
+
+if (swaggerDocument) {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 app.use(requestLogger);
 app.use(addRequestId);
