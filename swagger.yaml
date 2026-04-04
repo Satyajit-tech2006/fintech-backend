@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Zorvyn FinTech API
-  description: Core financial data processing, RBAC, and audit-logging service.
+  description: Enterprise financial data processing, RBAC, and audit-logging service.
   version: 1.0.0
 servers:
   - url: http://localhost:5000/api
@@ -13,14 +13,21 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  headers:
+    TraceId:
+      description: Correlation ID for request tracing and debugging.
+      schema:
+        type: string
+        example: "123e4567-e89b-12d3-a456-426614174000"
 
 security:
   - bearerAuth: []
 
 paths:
-  /auth/login:
+  # ================= AUTHENTICATION =================
+  /auth/register:
     post:
-      summary: Authenticate a user
+      summary: Register a new user
       tags: [Authentication]
       security: []
       requestBody:
@@ -29,6 +36,37 @@ paths:
           application/json:
             schema:
               type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  example: john@zorvyn.com
+                password:
+                  type: string
+                  example: strongpassword123
+      responses:
+        '201':
+          description: User registered successfully
+          headers:
+            X-Trace-Id:
+              $ref: '#/components/headers/TraceId'
+
+  /auth/login:
+    post:
+      summary: Authenticate a user
+      description: Returns a short-lived access token and sets an HttpOnly refresh cookie.
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
               properties:
                 email:
                   type: string
@@ -39,10 +77,73 @@ paths:
       responses:
         '200':
           description: Successful authentication
-  
-  /records:
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refreshToken=abcde12345; HttpOnly; Path=/; Max-Age=604800;
+            X-Trace-Id:
+              $ref: '#/components/headers/TraceId'
+
+  /auth/refresh:
     post:
-      summary: Create a financial record (Admin only)
+      summary: Refresh Access Token
+      description: Silently issues a new Access Token using the HttpOnly Refresh Cookie.
+      tags: [Authentication]
+      security: []
+      responses:
+        '200':
+          description: New access token issued successfully
+
+  /auth/logout:
+    post:
+      summary: Logout User
+      description: Clears the HttpOnly refresh cookie and revokes session in DB.
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Logged out successfully
+
+  # ================= FINANCIAL RECORDS =================
+  /records/summary:
+    get:
+      summary: Get advanced dashboard aggregations
+      description: Requires ANALYST or ADMIN role. Returns database-level aggregations.
+      tags: [Financial Records]
+      responses:
+        '200':
+          description: Returns stats, category totals, and monthly trends.
+          headers:
+            X-Trace-Id:
+              $ref: '#/components/headers/TraceId'
+
+  /records:
+    get:
+      summary: Get all financial records
+      description: Requires ANALYST or ADMIN role. Supports pagination, search, and filtering.
+      tags: [Financial Records]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: search
+          schema:
+            type: string
+            description: Search in notes or category
+      responses:
+        '200':
+          description: Paginated list of records
+    post:
+      summary: Create a financial record
+      description: Requires ADMIN role. Modifies ledger and creates audit log in a transaction.
       tags: [Financial Records]
       requestBody:
         required: true
@@ -50,10 +151,11 @@ paths:
           application/json:
             schema:
               type: object
+              required: [amount, type, category]
               properties:
                 amount:
                   type: number
-                  example: 5000
+                  example: 5000.50
                 type:
                   type: string
                   enum: [INCOME, EXPENSE]
@@ -63,23 +165,16 @@ paths:
                   example: Initial Funding
                 notes:
                   type: string
-                  example: Seed capital
+                  example: Seed capital deposit
       responses:
         '201':
-          description: Record created successfully and audit logged.
-          
-  /records/summary:
-    get:
-      summary: Get advanced dashboard aggregations
-      tags: [Dashboard]
-      responses:
-        '200':
-          description: Returns stats, category totals, and monthly trends.
+          description: Record created successfully
 
   /records/export:
     get:
       summary: Export financial data to CSV
-      tags: [Dashboard]
+      description: Requires ANALYST or ADMIN role.
+      tags: [Financial Records]
       responses:
         '200':
           description: Returns a downloadable CSV file.
@@ -87,3 +182,110 @@ paths:
             text/csv:
               schema:
                 type: string
+
+  /records/{id}:
+    put:
+      summary: Update a financial record
+      description: Requires ADMIN role. Updates record and logs audit history.
+      tags: [Financial Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  example: 7500.00
+                notes:
+                  type: string
+                  example: Updated funding amount
+      responses:
+        '200':
+          description: Record updated successfully
+    delete:
+      summary: Soft-delete a financial record
+      description: Requires ADMIN role. Stamps deletedAt, hiding it from standard queries.
+      tags: [Financial Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Record soft-deleted successfully
+
+  # ================= USER MANAGEMENT =================
+  /users:
+    get:
+      summary: Get all users
+      description: Requires ADMIN role.
+      tags: [User Management]
+      responses:
+        '200':
+          description: List of all users in the system.
+
+  /users/{id}/role:
+    patch:
+      summary: Update a user's role
+      description: Requires ADMIN role. Promote or demote users (VIEWER, ANALYST, ADMIN).
+      tags: [User Management]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [VIEWER, ANALYST, ADMIN]
+      responses:
+        '200':
+          description: User role updated successfully
+
+  /users/{id}/status:
+    patch:
+      summary: Update a user's active status
+      description: Requires ADMIN role. Instantly locks or unlocks accounts.
+      tags: [User Management]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE]
+      responses:
+        '200':
+          description: User status updated successfully
